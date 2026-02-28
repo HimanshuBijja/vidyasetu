@@ -126,37 +126,36 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         (chunk) => {
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === assistantMessageId
-                ? {
-                    ...msg,
-                    content:
-                      chunk.type === "text" && chunk.content
-                        ? msg.content + chunk.content
-                        : msg.content,
-                    streamingLayer:
-                      chunk.type === "layer" && chunk.layer
-                        ? chunk.layer
-                        : msg.streamingLayer,
-                    sources:
-                      chunk.type === "source" && chunk.source
-                        ? [...(msg.sources || []), chunk.source]
-                        : msg.sources,
-                    thinking:
-                      chunk.type === "thinking" && chunk.thinking
-                        ? chunk.thinking
-                        : msg.thinking,
-                    isStreaming:
-                      chunk.type !== "done" && chunk.type !== "error",
-                  }
-                : msg
-            )
+              msg.id === assistantMessageId ?
+                {
+                  ...msg,
+                  content:
+                    chunk.type === "text" && chunk.content ?
+                      msg.content + chunk.content
+                    : msg.content,
+                  streamingLayer:
+                    chunk.type === "layer" && chunk.layer ?
+                      chunk.layer
+                    : msg.streamingLayer,
+                  sources:
+                    chunk.type === "source" && chunk.source ?
+                      [...(msg.sources || []), chunk.source]
+                    : msg.sources,
+                  thinking:
+                    chunk.type === "thinking" && chunk.thinking ?
+                      chunk.thinking
+                    : msg.thinking,
+                  isStreaming: chunk.type !== "done" && chunk.type !== "error",
+                }
+              : msg,
+            ),
           );
 
           if (chunk.type === "source" && chunk.source) {
             collectedSources.push(chunk.source);
           }
         },
-        mentionedFileIds.length > 0 ? mentionedFileIds : undefined
+        mentionedFileIds.length > 0 ? mentionedFileIds : undefined,
       );
 
       // Trigger session update with first message for name generation
@@ -168,9 +167,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         id: `error-${Date.now()}`,
         role: "assistant",
         content:
-          error instanceof ChatApiError
-            ? `⚠️ Error: ${error.message}`
-            : "⚠️ Failed to get response. Please try again.",
+          error instanceof ChatApiError ?
+            `⚠️ Error: ${error.message}`
+          : "⚠️ Failed to get response. Please try again.",
         timestamp: new Date(),
       };
 
@@ -189,8 +188,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
     setMessages((prev) =>
       prev.map((msg) =>
-        msg.id === messageId ? { ...msg, isTranslating: true } : msg
-      )
+        msg.id === messageId ? { ...msg, isTranslating: true } : msg,
+      ),
     );
 
     try {
@@ -199,20 +198,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         sessionId,
         content,
         "en",
-        selectedLanguage // Global selected language
+        selectedLanguage, // Global selected language
       );
 
       if (response.success && response.translated) {
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === messageId
-              ? {
-                  ...msg,
-                  translatedContent: response.translated,
-                  isTranslating: false,
-                }
-              : msg
-          )
+            msg.id === messageId ?
+              {
+                ...msg,
+                translatedContent: response.translated,
+                isTranslating: false,
+              }
+            : msg,
+          ),
         );
       } else {
         throw new Error(response.error || "Translation failed");
@@ -221,8 +220,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       console.error("Translation error:", error);
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === messageId ? { ...msg, isTranslating: false } : msg
-        )
+          msg.id === messageId ? { ...msg, isTranslating: false } : msg,
+        ),
       );
       // Optionally show a toast or error indicator
     }
@@ -248,24 +247,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         await uploadFile(userId, sessionId, file, (progress) => {
           setUploadProgress((prev) =>
             prev.map((item) =>
-              item.fileId === fileId
-                ? {
-                    ...item,
-                    progress,
-                    status: progress < 100 ? "uploading" : "processing",
-                  }
-                : item
-            )
+              item.fileId === fileId ?
+                {
+                  ...item,
+                  progress,
+                  status: progress < 100 ? "uploading" : "processing",
+                }
+              : item,
+            ),
           );
         });
 
         // Success
         setUploadProgress((prev) =>
           prev.map((item) =>
-            item.fileId === fileId
-              ? { ...item, status: "completed", progress: 100 }
-              : item
-          )
+            item.fileId === fileId ?
+              { ...item, status: "completed", progress: 100 }
+            : item,
+          ),
         );
 
         // Add system message
@@ -283,7 +282,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         // Remove from progress after 3 seconds
         setTimeout(() => {
           setUploadProgress((prev) =>
-            prev.filter((item) => item.fileId !== fileId)
+            prev.filter((item) => item.fileId !== fileId),
           );
         }, 3000);
       } catch (error) {
@@ -291,17 +290,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         setUploadProgress((prev) =>
           prev.map((item) =>
-            item.fileId === fileId
-              ? {
-                  ...item,
-                  status: "error",
-                  error:
-                    error instanceof ChatApiError
-                      ? error.message
-                      : "Upload failed",
-                }
-              : item
-          )
+            item.fileId === fileId ?
+              {
+                ...item,
+                status: "error",
+                error:
+                  error instanceof ChatApiError ?
+                    error.message
+                  : "Upload failed",
+              }
+            : item,
+          ),
         );
 
         // Add error message
@@ -355,7 +354,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     <div className="h-full flex flex-col bg-white/50 overflow-hidden">
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gradient-to-b from-white to-orange-50/30 min-h-0">
-        {messages.length === 0 ? (
+        {messages.length === 0 ?
           <div className="flex items-center justify-center h-full">
             <div className="text-center px-4">
               <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
@@ -387,51 +386,48 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </button>
             </div>
           </div>
-        ) : (
-          <>
+        : <>
             <div className="space-y-4">
               {messages.map((message) => (
                 <div key={message.id}>
                   {/* Use StreamingMessage for streaming assistant messages */}
-                  {message.role === "assistant" && message.isStreaming ? (
+                  {message.role === "assistant" && message.isStreaming ?
                     <StreamingMessage
                       content={message.content}
                       isStreaming={message.isStreaming}
                       sources={message.sources || []}
                       timestamp={message.timestamp}
                     />
-                  ) : (
-                    <div
+                  : <div
                       className={`flex ${
-                        message.role === "user"
-                          ? "justify-end"
-                          : "justify-start"
+                        message.role === "user" ?
+                          "justify-end"
+                        : "justify-start"
                       }`}
                     >
                       <div
                         className={`max-w-[85%] rounded-2xl p-4 shadow-md ${
-                          message.role === "user"
-                            ? "bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-br-sm"
-                            : "bg-white text-gray-800 rounded-bl-sm border-2 border-orange-100"
+                          message.role === "user" ?
+                            "bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-br-sm"
+                          : "bg-white text-gray-800 rounded-bl-sm border-2 border-orange-100"
                         }`}
                       >
                         {/* Message Content */}
                         <div className="max-w-none">
-                          {message.role === "assistant" ? (
+                          {message.role === "assistant" ?
                             <MarkdownRenderer content={message.content} />
-                          ) : (
-                            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                          : <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
                               {message.content}
                             </p>
-                          )}
+                          }
                         </div>
 
                         {/* Timestamp */}
                         <div
                           className={`text-xs mt-2 ${
-                            message.role === "user"
-                              ? "text-orange-100"
-                              : "text-gray-500"
+                            message.role === "user" ?
+                              "text-orange-100"
+                            : "text-gray-500"
                           }`}
                         >
                           {formatTimestamp(message.timestamp)}
@@ -542,30 +538,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                               >
                                 <div className="space-y-3 p-1">
                                   {/* Translated Content */}
-                                  {message.translatedContent ? (
+                                  {message.translatedContent ?
                                     <div className="p-3 bg-orange-50 rounded-lg border border-orange-100">
-                                      <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                                        {message.translatedContent}
-                                      </p>
+                                      <MarkdownRenderer
+                                        content={message.translatedContent}
+                                      />
                                     </div>
-                                  ) : (
-                                    <p className="text-xs text-gray-500 italic">
+                                  : <p className="text-xs text-gray-500 italic">
                                       No translation generated yet.
                                     </p>
-                                  )}
+                                  }
 
                                   {/* Translate Action */}
                                   <button
                                     onClick={() =>
                                       handleTranslateMessage(
                                         message.id,
-                                        message.content
+                                        message.content,
                                       )
                                     }
                                     disabled={message.isTranslating}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors text-xs font-semibold"
                                   >
-                                    {message.isTranslating ? (
+                                    {message.isTranslating ?
                                       <>
                                         <svg
                                           className="animate-spin w-3 h-3"
@@ -588,12 +583,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                         </svg>
                                         Translating to{" "}
                                         {INDIAN_LANGUAGES.find(
-                                          (l) => l.code === selectedLanguage
+                                          (l) => l.code === selectedLanguage,
                                         )?.name || selectedLanguage}
                                         ...
                                       </>
-                                    ) : (
-                                      <>
+                                    : <>
                                         <svg
                                           className="w-3.5 h-3.5"
                                           fill="none"
@@ -607,15 +601,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                             d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
                                           />
                                         </svg>
-                                        {message.translatedContent
-                                          ? "Translate Again"
-                                          : "Translate"}{" "}
+                                        {message.translatedContent ?
+                                          "Translate Again"
+                                        : "Translate"}{" "}
                                         to{" "}
                                         {INDIAN_LANGUAGES.find(
-                                          (l) => l.code === selectedLanguage
+                                          (l) => l.code === selectedLanguage,
                                         )?.name || selectedLanguage}
                                       </>
-                                    )}
+                                    }
                                   </button>
                                 </div>
                               </Accordion>
@@ -623,7 +617,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           )}
                       </div>
                     </div>
-                  )}
+                  }
                 </div>
               ))}
 
@@ -633,7 +627,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
             <div ref={messagesEndRef} />
           </>
-        )}
+        }
       </div>
 
       {/* Upload Progress Indicators */}
@@ -660,21 +654,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     {upload.fileName}
                   </span>
                   <span className="text-gray-500 ml-2">
-                    {upload.status === "completed"
-                      ? "✓"
-                      : upload.status === "error"
-                      ? "✗"
-                      : `${Math.round(upload.progress)}%`}
+                    {upload.status === "completed" ?
+                      "✓"
+                    : upload.status === "error" ?
+                      "✗"
+                    : `${Math.round(upload.progress)}%`}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-1.5">
                   <div
                     className={`h-1.5 rounded-full transition-all ${
-                      upload.status === "completed"
-                        ? "bg-green-500"
-                        : upload.status === "error"
-                        ? "bg-red-500"
-                        : "bg-orange-500"
+                      upload.status === "completed" ? "bg-green-500"
+                      : upload.status === "error" ? "bg-red-500"
+                      : "bg-orange-500"
                     }`}
                     style={{ width: `${upload.progress}%` }}
                   />
@@ -748,9 +740,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isLoading}
             className={`p-2.5 rounded-xl transition-all flex-shrink-0 border-2 ${
-              inputValue.trim() && !isLoading
-                ? "bg-gradient-to-br from-orange-400 to-orange-500 text-white border-orange-400 hover:from-orange-500 hover:to-orange-600 shadow-md hover:shadow-lg"
-                : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+              inputValue.trim() && !isLoading ?
+                "bg-gradient-to-br from-orange-400 to-orange-500 text-white border-orange-400 hover:from-orange-500 hover:to-orange-600 shadow-md hover:shadow-lg"
+              : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
             }`}
           >
             <svg

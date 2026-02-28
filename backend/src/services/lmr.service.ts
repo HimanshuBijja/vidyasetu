@@ -149,7 +149,7 @@ export class LMRService {
       const jsonStartIndex = cleanedResponse.indexOf(jsonStartChar);
       if (jsonStartIndex === -1) {
         throw new Error(
-          `No JSON ${isArray ? "array" : "object"} found in response`
+          `No JSON ${isArray ? "array" : "object"} found in response`,
         );
       }
       cleanedResponse = cleanedResponse.substring(jsonStartIndex);
@@ -242,7 +242,7 @@ export class LMRService {
         for (let i = 0; i < openBraces; i++) jsonStr += "}";
 
         console.log(
-          `🔧 Repaired JSON: closed ${openBrackets} brackets, ${openBraces} braces`
+          `🔧 Repaired JSON: closed ${openBrackets} brackets, ${openBraces} braces`,
         );
       } else {
         jsonStr = cleanedResponse.substring(0, jsonEndIndex);
@@ -257,7 +257,7 @@ export class LMRService {
           "🔧 JSON sanitized - original length:",
           jsonStr.length,
           "→ sanitized:",
-          sanitized.length
+          sanitized.length,
         );
       }
 
@@ -266,11 +266,12 @@ export class LMRService {
       console.error("❌ JSON extraction/parsing failed:", error);
       console.error(
         "Raw response (first 1000 chars):",
-        response.substring(0, 1000)
+        response.substring(0, 1000),
       );
       throw new Error(
-        `Failed to parse AI response: ${error instanceof Error ? error.message : "Unknown error"
-        }`
+        `Failed to parse AI response: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       );
     }
   }
@@ -283,7 +284,7 @@ export class LMRService {
    */
   private calculateDocumentMetrics(
     content: string,
-    pageCount: number = 1
+    pageCount: number = 1,
   ): DocumentMetrics {
     // Basic text analysis
     const wordCount = content.split(/\s+/).filter((w) => w.length > 0).length;
@@ -296,7 +297,7 @@ export class LMRService {
     const headingMatches = content.match(/^#+\s+.+$|^[A-Z][^.!?]*:$/gm) || [];
     const estimatedTopics = Math.max(
       3,
-      Math.min(12, headingMatches.length || Math.ceil(paragraphCount / 3))
+      Math.min(12, headingMatches.length || Math.ceil(paragraphCount / 3)),
     );
 
     // Determine content density
@@ -351,16 +352,16 @@ export class LMRService {
     if (estimatedTopics >= 8) {
       recommendedRecallTopicCount = Math.min(
         15,
-        recommendedRecallTopicCount + 3
+        recommendedRecallTopicCount + 3,
       );
       recommendedQuestionCount = Math.min(15, recommendedQuestionCount + 2);
     }
 
     console.log(
-      `📊 Document Metrics: ${wordCount} words, ${paragraphCount} paragraphs, ~${estimatedTopics} topics, density: ${contentDensity}`
+      `📊 Document Metrics: ${wordCount} words, ${paragraphCount} paragraphs, ~${estimatedTopics} topics, density: ${contentDensity}`,
     );
     console.log(
-      `📊 Dynamic Quantities: ${recommendedConceptCount} concepts, ${recommendedRecallTopicCount} recall topics, ${recommendedQuestionCount} questions`
+      `📊 Dynamic Quantities: ${recommendedConceptCount} concepts, ${recommendedRecallTopicCount} recall topics, ${recommendedQuestionCount} questions`,
     );
 
     return {
@@ -394,7 +395,7 @@ export class LMRService {
     documentContent: string,
     taskType: LMRTaskType,
     language: string,
-    additionalParams?: { count?: number }
+    additionalParams?: { count?: number },
   ): Promise<CompressedContext> {
     const taskInstructions: Record<LMRTaskType, string> = {
       summary: `Extract information needed for a comprehensive summary:
@@ -403,15 +404,17 @@ export class LMRService {
 - List important concepts that students must understand
 - Note any significant examples or case studies`,
 
-      questions: `Extract information needed to generate ${additionalParams?.count || 10
-        } Q&A pairs:
+      questions: `Extract information needed to generate ${
+        additionalParams?.count || 10
+      } Q&A pairs:
 - Identify all factual statements that can be converted to questions
 - Note specific details, definitions, and explanations
 - List concepts that require deeper understanding
 - Include any numerical data or specific facts`,
 
-      quiz: `Extract information needed to generate ${additionalParams?.count || 10
-        } MCQ questions:
+      quiz: `Extract information needed to generate ${
+        additionalParams?.count || 10
+      } MCQ questions:
 - Identify facts that have clear correct/incorrect options
 - Note definitions with possible confusing alternatives
 - List concepts that students often misunderstand
@@ -432,10 +435,11 @@ NOTATION RULES (Enforce Simple Text):
 - Physics: Use simple text representation
 
 DOCUMENT CONTENT:
-${documentContent.substring(0, 15001)}${documentContent.length > 15001
-        ? "\n\n[... document truncated for processing ...]"
-        : ""
-      }
+${documentContent.substring(0, 15001)}${
+      documentContent.length > 15001 ?
+        "\n\n[... document truncated for processing ...]"
+      : ""
+    }
 
 TASK: ${taskInstructions[taskType]}
 
@@ -459,17 +463,18 @@ CRITICAL RULES:
     try {
       const result = await ollamaChatService.generateWithMaxOutput(
         prompt,
-        2000
+        2000,
       );
       const response = result.answer;
 
       const parsed = this.extractAndParseJSON(
         response,
-        false
+        false,
       ) as CompressedContext;
       console.log(
-        `✅ Layer 1 complete: Extracted ${parsed.mainTopics?.length || 0
-        } topics, ${parsed.keyFacts?.length || 0} facts`
+        `✅ Layer 1 complete: Extracted ${
+          parsed.mainTopics?.length || 0
+        } topics, ${parsed.keyFacts?.length || 0} facts`,
       );
       return parsed;
     } catch (error) {
@@ -497,7 +502,7 @@ CRITICAL RULES:
       jsonTemplate: string;
       isArray: boolean;
     },
-    additionalParams?: { count?: number }
+    additionalParams?: { count?: number },
   ): Promise<T> {
     const contextSummary = `
 EXTRACTED CONTENT:
@@ -508,18 +513,20 @@ ${(compressedContext.keyFacts || []).map((f, i) => `${i + 1}. ${f}`).join("\n")}
 
 Important Concepts:
 ${(compressedContext.importantConcepts || [])
-        .map((c, i) => `${i + 1}. ${c}`)
-        .join("\n")}
+  .map((c, i) => `${i + 1}. ${c}`)
+  .join("\n")}
 
-${compressedContext.relevantExamples?.length
-        ? `Examples:\n${compressedContext.relevantExamples
-          .map((e, i) => `${i + 1}. ${e}`)
-          .join("\n")}`
-        : ""
-      }`;
+${
+  compressedContext.relevantExamples?.length ?
+    `Examples:\n${compressedContext.relevantExamples
+      .map((e, i) => `${i + 1}. ${e}`)
+      .join("\n")}`
+  : ""
+}`;
 
-    const prompt = `You are a precise JSON generator. Generate EXACTLY ${schema.isArray ? "a JSON array" : "a JSON object"
-      } based on the provided content.
+    const prompt = `You are a precise JSON generator. Generate EXACTLY ${
+      schema.isArray ? "a JSON array" : "a JSON object"
+    } based on the provided content.
 
 NOTATION RULES (Enforce Simple Text):
 - Math: Use plain text fractions (e.g., "1/3") NOT LaTeX (e.g., "\\frac{1}{3}")
@@ -530,10 +537,11 @@ ${contextSummary}
 
 TASK: ${schema.description}
 
-${additionalParams?.count
-        ? `Generate exactly ${additionalParams.count} items.`
-        : ""
-      }
+${
+  additionalParams?.count ?
+    `Generate exactly ${additionalParams.count} items.`
+  : ""
+}
 
 Language: ${language}
 
@@ -560,20 +568,21 @@ OUTPUT THE JSON NOW:`;
       try {
         const result = await ollamaChatService.generateWithMaxOutput(
           prompt,
-          3000
+          3000,
         );
         const response = result.answer;
 
         const parsed = this.extractAndParseJSON(response, schema.isArray);
         console.log(
-          `✅ Layer 2 complete (attempt ${attempt}): Generated ${schema.isArray ? (parsed as any[]).length + " items" : "object"
-          }`
+          `✅ Layer 2 complete (attempt ${attempt}): Generated ${
+            schema.isArray ? (parsed as any[]).length + " items" : "object"
+          }`,
         );
         return parsed as T;
       } catch (error) {
         console.warn(
           `⚠️ Layer 2 attempt ${attempt}/${maxRetries} failed:`,
-          error
+          error,
         );
         lastError = error instanceof Error ? error : new Error("Unknown error");
 
@@ -585,7 +594,7 @@ OUTPUT THE JSON NOW:`;
     }
 
     throw new Error(
-      `Layer 2 (JSON Generation) failed after ${maxRetries} attempts: ${lastError?.message}`
+      `Layer 2 (JSON Generation) failed after ${maxRetries} attempts: ${lastError?.message}`,
     );
   }
 
@@ -637,11 +646,11 @@ OUTPUT THE JSON NOW:`;
   async generateSummary(
     fileId: string,
     language: LanguageCode,
-    tone: string = "professional"
+    tone: string = "professional",
   ): Promise<LMRSummary> {
     try {
       console.log(
-        "📝 Starting Summary Generation (Two-Layer AI with Dynamic Quantities)..."
+        "📝 Starting Summary Generation (Two-Layer AI with Dynamic Quantities)...",
       );
 
       // Retrieve full document content
@@ -653,7 +662,7 @@ OUTPUT THE JSON NOW:`;
       // ═══════════════════════════════════════════════════════════════
       const metrics = this.calculateDocumentMetrics(
         document.fullContent,
-        document.pages
+        document.pages,
       );
       const conceptCount = metrics.recommendedConceptCount; // 6-10 based on document
 
@@ -664,7 +673,7 @@ OUTPUT THE JSON NOW:`;
       const compressedContext = await this.compressContextForTask(
         document.fullContent,
         "summary",
-        languageName
+        languageName,
       );
 
       // ═══════════════════════════════════════════════════════════════
@@ -672,7 +681,7 @@ OUTPUT THE JSON NOW:`;
       // Enhanced prompt for BEST-OF-BEST last-minute revision content
       // ═══════════════════════════════════════════════════════════════
       console.log(
-        `🔄 Layer 2: Generating structured summary with ${conceptCount} important concepts...`
+        `🔄 Layer 2: Generating structured summary with ${conceptCount} important concepts...`,
       );
 
       // 3 bullet points per concept (not 5) - more concepts, fewer bullets
@@ -742,10 +751,10 @@ YOU MUST generate exactly 8 importantConcepts and ${keyTopicCount} keyTopics. Do
 
       console.log("✅ Structured summary generation complete!");
 
-      // Build backward-compatible summary string from structured data
-      const legacySummary = `${result.introduction} \n\n${result.summaryPoints
-        .map((p) => `• ${p}`)
-        .join("\n")} \n\n${result.conclusion} `;
+      const safeSummaryPoints = result.summaryPoints || [];
+      const legacySummary = `${result.introduction || ""} \n\n${safeSummaryPoints
+        .map((p: string) => `• ${p}`)
+        .join("\n")} \n\n${result.conclusion || ""} `;
 
       return {
         introduction: result.introduction || "",
@@ -765,8 +774,9 @@ YOU MUST generate exactly 8 importantConcepts and ${keyTopicCount} keyTopics. Do
     } catch (error) {
       console.error("❌ Summary generation failed:", error);
       throw new Error(
-        `Failed to generate summary: ${error instanceof Error ? error.message : "Unknown error"
-        } `
+        `Failed to generate summary: ${
+          error instanceof Error ? error.message : "Unknown error"
+        } `,
       );
     }
   }
@@ -779,11 +789,11 @@ YOU MUST generate exactly 8 importantConcepts and ${keyTopicCount} keyTopics. Do
   async generateQuestions(
     fileId: string,
     language: LanguageCode,
-    count: number = 10
+    count: number = 10,
   ): Promise<LMRQuestion[]> {
     try {
       console.log(
-        "❓ Starting Q&A Generation (Two-Layer AI with Dynamic Quantities)..."
+        "❓ Starting Q&A Generation (Two-Layer AI with Dynamic Quantities)...",
       );
 
       const document = await this.getFullDocumentContent(fileId);
@@ -794,13 +804,13 @@ YOU MUST generate exactly 8 importantConcepts and ${keyTopicCount} keyTopics. Do
       // ═══════════════════════════════════════════════════════════════
       const metrics = this.calculateDocumentMetrics(
         document.fullContent,
-        document.pages
+        document.pages,
       );
       const dynamicCount = metrics.recommendedQuestionCount; // 10-15 based on document
       const actualCount = Math.max(count, dynamicCount); // Use higher of provided or recommended
 
       console.log(
-        `📊 Dynamic question count: ${actualCount} (provided: ${count}, recommended: ${dynamicCount})`
+        `📊 Dynamic question count: ${actualCount} (provided: ${count}, recommended: ${dynamicCount})`,
       );
 
       // ═══════════════════════════════════════════════════════════════
@@ -811,7 +821,7 @@ YOU MUST generate exactly 8 importantConcepts and ${keyTopicCount} keyTopics. Do
         document.fullContent,
         "questions",
         languageName,
-        { count: actualCount }
+        { count: actualCount },
       );
 
       // ═══════════════════════════════════════════════════════════════
@@ -819,7 +829,7 @@ YOU MUST generate exactly 8 importantConcepts and ${keyTopicCount} keyTopics. Do
       // Enhanced prompt for BEST-OF-BEST exam preparation questions
       // ═══════════════════════════════════════════════════════════════
       console.log(
-        `🔄 Layer 2: Generating ${actualCount} high - quality questions...`
+        `🔄 Layer 2: Generating ${actualCount} high - quality questions...`,
       );
 
       // Calculate difficulty distribution
@@ -892,11 +902,11 @@ ANSWER QUALITY STANDARDS:
         "questions",
         languageName,
         questionsSchema,
-        { count: actualCount }
+        { count: actualCount },
       );
 
       console.log(
-        `✅ Q & A generation complete! Generated ${questions.length} questions`
+        `✅ Q & A generation complete! Generated ${questions.length} questions`,
       );
 
       return questions.map((q: any, index: number) => ({
@@ -910,8 +920,9 @@ ANSWER QUALITY STANDARDS:
     } catch (error) {
       console.error("❌ Q&A generation failed:", error);
       throw new Error(
-        `Failed to generate questions: ${error instanceof Error ? error.message : "Unknown error"
-        } `
+        `Failed to generate questions: ${
+          error instanceof Error ? error.message : "Unknown error"
+        } `,
       );
     }
   }
@@ -923,7 +934,7 @@ ANSWER QUALITY STANDARDS:
   async generateQuiz(
     fileId: string,
     language: LanguageCode,
-    count: number = 10
+    count: number = 10,
   ): Promise<LMRQuiz[]> {
     try {
       console.log("📋 Starting Quiz Generation (Two-Layer AI)...");
@@ -939,7 +950,7 @@ ANSWER QUALITY STANDARDS:
         document.fullContent,
         "quiz",
         languageName,
-        { count }
+        { count },
       );
 
       // ═══════════════════════════════════════════════════════════════
@@ -983,7 +994,7 @@ IMPORTANT: Generate EXACTLY ${count} MCQ questions. NO trailing commas!`,
         "quiz",
         languageName,
         quizSchema,
-        { count }
+        { count },
       );
 
       console.log("✅ Quiz generation complete!");
@@ -1000,8 +1011,9 @@ IMPORTANT: Generate EXACTLY ${count} MCQ questions. NO trailing commas!`,
     } catch (error) {
       console.error("❌ Quiz generation failed:", error);
       throw new Error(
-        `Failed to generate quiz: ${error instanceof Error ? error.message : "Unknown error"
-        } `
+        `Failed to generate quiz: ${
+          error instanceof Error ? error.message : "Unknown error"
+        } `,
       );
     }
   }
@@ -1013,11 +1025,11 @@ IMPORTANT: Generate EXACTLY ${count} MCQ questions. NO trailing commas!`,
    */
   async generateRecallNotes(
     fileId: string,
-    language: LanguageCode
+    language: LanguageCode,
   ): Promise<LMRRecallNote[]> {
     try {
       console.log(
-        "🧠 Starting Recall Notes Generation (Two-Layer AI with Dynamic Topics)..."
+        "🧠 Starting Recall Notes Generation (Two-Layer AI with Dynamic Topics)...",
       );
 
       const document = await this.getFullDocumentContent(fileId);
@@ -1028,7 +1040,7 @@ IMPORTANT: Generate EXACTLY ${count} MCQ questions. NO trailing commas!`,
       // ═══════════════════════════════════════════════════════════════
       const metrics = this.calculateDocumentMetrics(
         document.fullContent,
-        document.pages
+        document.pages,
       );
       const topicCount = metrics.recommendedRecallTopicCount; // 6-15 based on document
 
@@ -1041,7 +1053,7 @@ IMPORTANT: Generate EXACTLY ${count} MCQ questions. NO trailing commas!`,
       const compressedContext = await this.compressContextForTask(
         document.fullContent,
         "recallNotes",
-        languageName
+        languageName,
       );
 
       // ═══════════════════════════════════════════════════════════════
@@ -1094,7 +1106,7 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
         compressedContext,
         "recallNotes",
         languageName,
-        recallNotesSchema
+        recallNotesSchema,
       );
 
       console.log("✅ Comprehensive recall notes generation complete!");
@@ -1121,7 +1133,7 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
           })
           .filter(
             (item) =>
-              item && item !== "{}" && item !== "null" && item !== "undefined"
+              item && item !== "{}" && item !== "null" && item !== "undefined",
           );
       };
 
@@ -1134,8 +1146,9 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
     } catch (error) {
       console.error("❌ Recall notes generation failed:", error);
       throw new Error(
-        `Failed to generate recall notes: ${error instanceof Error ? error.message : "Unknown error"
-        } `
+        `Failed to generate recall notes: ${
+          error instanceof Error ? error.message : "Unknown error"
+        } `,
       );
     }
   }
@@ -1160,8 +1173,9 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
       };
     } catch (error) {
       throw new Error(
-        `Failed to generate content: ${error instanceof Error ? error.message : "Unknown error"
-        } `
+        `Failed to generate content: ${
+          error instanceof Error ? error.message : "Unknown error"
+        } `,
       );
     }
   }
@@ -1176,7 +1190,7 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
    */
   private async translateText(
     text: string,
-    targetLang: SupportedLanguageCode
+    targetLang: SupportedLanguageCode,
   ): Promise<string> {
     if (!text || text.trim().length === 0) return text;
     if (targetLang === "en") return text; // No translation needed for English
@@ -1194,15 +1208,15 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
       console.log(
         `📝 Translated: "${text.substring(
           0,
-          40
-        )}..." -> "${translated.substring(0, 40)}..."`
+          40,
+        )}..." -> "${translated.substring(0, 40)}..."`,
       );
 
       return translated;
     } catch (error) {
       console.warn(
         `⚠️ Translation failed for text "${text.substring(0, 30)}...":`,
-        error
+        error,
       );
       return text; // Fallback to original if translation fails
     }
@@ -1213,14 +1227,14 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
    */
   async translateSummary(
     summary: LMRSummary,
-    targetLang: SupportedLanguageCode
+    targetLang: SupportedLanguageCode,
   ): Promise<LMRSummary> {
     if (targetLang === "en") return summary;
 
     console.log(
       `🌐 Translating summary to ${languageService.getLanguageName(
-        targetLang
-      )}...`
+        targetLang,
+      )}...`,
     );
 
     const [
@@ -1233,25 +1247,25 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
     ] = await Promise.all([
       this.translateText(summary.introduction, targetLang),
       this.translateText(summary.conclusion, targetLang),
-      summary.summary
-        ? this.translateText(summary.summary, targetLang)
-        : Promise.resolve(undefined),
+      summary.summary ?
+        this.translateText(summary.summary, targetLang)
+      : Promise.resolve(undefined),
       Promise.all(
-        summary.summaryPoints.map((p) => this.translateText(p, targetLang))
+        summary.summaryPoints.map((p) => this.translateText(p, targetLang)),
       ),
       Promise.all(
         summary.keyTopics.map(async (t) => ({
           name: await this.translateText(t.name, targetLang),
           description: await this.translateText(t.description, targetLang),
-        }))
+        })),
       ),
       Promise.all(
         summary.importantConcepts.map(async (c) => ({
           name: await this.translateText(c.name, targetLang),
           points: await Promise.all(
-            c.points.map((p) => this.translateText(p, targetLang))
+            c.points.map((p) => this.translateText(p, targetLang)),
           ),
-        }))
+        })),
       ),
     ]);
 
@@ -1272,13 +1286,14 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
    */
   async translateQuestions(
     questions: LMRQuestion[],
-    targetLang: SupportedLanguageCode
+    targetLang: SupportedLanguageCode,
   ): Promise<LMRQuestion[]> {
     if (targetLang === "en") return questions;
 
     console.log(
-      `🌐 Translating ${questions.length
-      } questions to ${languageService.getLanguageName(targetLang)}...`
+      `🌐 Translating ${
+        questions.length
+      } questions to ${languageService.getLanguageName(targetLang)}...`,
     );
 
     return Promise.all(
@@ -1287,7 +1302,7 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
         question: await this.translateText(q.question, targetLang),
         answer: await this.translateText(q.answer, targetLang),
         subject: await this.translateText(q.subject, targetLang),
-      }))
+      })),
     );
   }
 
@@ -1296,13 +1311,14 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
    */
   async translateQuiz(
     quiz: LMRQuiz[],
-    targetLang: SupportedLanguageCode
+    targetLang: SupportedLanguageCode,
   ): Promise<LMRQuiz[]> {
     if (targetLang === "en") return quiz;
 
     console.log(
-      `🌐 Translating ${quiz.length
-      } quiz questions to ${languageService.getLanguageName(targetLang)}...`
+      `🌐 Translating ${
+        quiz.length
+      } quiz questions to ${languageService.getLanguageName(targetLang)}...`,
     );
 
     return Promise.all(
@@ -1310,11 +1326,11 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
         ...q,
         question: await this.translateText(q.question, targetLang),
         options: await Promise.all(
-          q.options.map((o) => this.translateText(o, targetLang))
+          q.options.map((o) => this.translateText(o, targetLang)),
         ),
         explanation: await this.translateText(q.explanation, targetLang),
         subject: await this.translateText(q.subject, targetLang),
-      }))
+      })),
     );
   }
 
@@ -1323,30 +1339,32 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
    */
   async translateRecallNotes(
     notes: LMRRecallNote[],
-    targetLang: SupportedLanguageCode
+    targetLang: SupportedLanguageCode,
   ): Promise<LMRRecallNote[]> {
     if (targetLang === "en") return notes;
 
     console.log(
-      `🌐 Translating ${notes.length
-      } recall note topics to ${languageService.getLanguageName(targetLang)}...`
+      `🌐 Translating ${
+        notes.length
+      } recall note topics to ${languageService.getLanguageName(targetLang)}...`,
     );
 
     return Promise.all(
       notes.map(async (n) => ({
         topic: await this.translateText(n.topic, targetLang),
         keyPoints: await Promise.all(
-          n.keyPoints.map((p) => this.translateText(p, targetLang))
+          n.keyPoints.map((p) => this.translateText(p, targetLang)),
         ),
         quickFacts: await Promise.all(
-          n.quickFacts.map((f) => this.translateText(f, targetLang))
+          n.quickFacts.map((f) => this.translateText(f, targetLang)),
         ),
-        mnemonics: n.mnemonics
-          ? await Promise.all(
-            n.mnemonics.map((m) => this.translateText(m, targetLang))
-          )
+        mnemonics:
+          n.mnemonics ?
+            await Promise.all(
+              n.mnemonics.map((m) => this.translateText(m, targetLang)),
+            )
           : undefined,
-      }))
+      })),
     );
   }
 
@@ -1360,7 +1378,7 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
       quiz?: LMRQuiz[];
       recallNotes?: LMRRecallNote[];
     },
-    targetLang: SupportedLanguageCode
+    targetLang: SupportedLanguageCode,
   ): Promise<{
     summary?: LMRSummary;
     questions?: LMRQuestion[];
@@ -1369,7 +1387,7 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
   }> {
     if (!env.NLLB_ENABLED) {
       throw new Error(
-        "NLLB translation is not enabled. Set NLLB_ENABLED=true in environment."
+        "NLLB translation is not enabled. Set NLLB_ENABLED=true in environment.",
       );
     }
 
@@ -1379,29 +1397,29 @@ Each keyPoint and quickFact must be a plain STRING, not an object.`,
 
     console.log(
       `🌐 Translating all LMR content to ${languageService.getLanguageName(
-        targetLang
-      )}...`
+        targetLang,
+      )}...`,
     );
 
     const [summary, questions, quiz, recallNotes] = await Promise.all([
-      content.summary
-        ? this.translateSummary(content.summary, targetLang)
-        : Promise.resolve(undefined),
-      content.questions
-        ? this.translateQuestions(content.questions, targetLang)
-        : Promise.resolve(undefined),
-      content.quiz
-        ? this.translateQuiz(content.quiz, targetLang)
-        : Promise.resolve(undefined),
-      content.recallNotes
-        ? this.translateRecallNotes(content.recallNotes, targetLang)
-        : Promise.resolve(undefined),
+      content.summary ?
+        this.translateSummary(content.summary, targetLang)
+      : Promise.resolve(undefined),
+      content.questions ?
+        this.translateQuestions(content.questions, targetLang)
+      : Promise.resolve(undefined),
+      content.quiz ?
+        this.translateQuiz(content.quiz, targetLang)
+      : Promise.resolve(undefined),
+      content.recallNotes ?
+        this.translateRecallNotes(content.recallNotes, targetLang)
+      : Promise.resolve(undefined),
     ]);
 
     console.log(
       `✅ Translation complete to ${languageService.getLanguageName(
-        targetLang
-      )}`
+        targetLang,
+      )}`,
     );
 
     return { summary, questions, quiz, recallNotes };

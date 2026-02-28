@@ -3,7 +3,6 @@ import { chatService } from "../services/chat.service";
 import { vectorDBService } from "../services/vectordb.service";
 import { asyncRAGOrchestratorService } from "../services/asyncRAGOrchestrator.service";
 
-
 export class ChatController {
   /**
    * Get all chat sessions for a user
@@ -27,7 +26,6 @@ export class ChatController {
         sessions,
       });
     } catch (error: any) {
-
       res.status(500).json({
         success: false,
         error: error.message || "Failed to get chat sessions",
@@ -73,7 +71,6 @@ export class ChatController {
         documentCount: files.length,
       });
     } catch (error: any) {
-
       res.status(500).json({
         success: false,
         error: error.message || "Failed to get session details",
@@ -104,7 +101,6 @@ export class ChatController {
         message: "Chat session deleted successfully",
       });
     } catch (error: any) {
-
       res.status(500).json({
         success: false,
         error: error.message || "Failed to delete chat session",
@@ -144,7 +140,6 @@ export class ChatController {
         message: "Chat name updated successfully",
       });
     } catch (error: any) {
-
       res.status(500).json({
         success: false,
         error: error.message || "Failed to update chat name",
@@ -177,15 +172,13 @@ export class ChatController {
       const chatHistory = await chatService.getRecentMessages(
         userId,
         sessionId,
-        10
+        10,
       );
-
-
 
       const result = await asyncRAGOrchestratorService.processQuery(
         query,
         chatHistory,
-        chromaCollectionName
+        chromaCollectionName,
       );
 
       // Save user message
@@ -201,8 +194,6 @@ export class ChatController {
         sources: result.sources,
       });
 
-
-
       res.status(200).json({
         success: true,
         answer: result.answer,
@@ -210,8 +201,6 @@ export class ChatController {
         metadata: result.metadata,
       });
     } catch (error: any) {
-
-
       res.status(500).json({
         success: false,
         error: error.message || "Failed to process query",
@@ -231,7 +220,6 @@ export class ChatController {
         health,
       });
     } catch (error: any) {
-
       res.status(500).json({
         success: false,
         error: error.message || "Health check failed",
@@ -318,20 +306,61 @@ export class ChatController {
       const srcLang = languageService.toNLLBCode(srcCode as any);
       const tgtLang = languageService.toNLLBCode(tgtCode as any);
 
-      // Translate using NLLB
-      const translated = await nllbService.translate(text, {
-        srcLang: srcLang,
-        tgtLang: tgtLang,
-      });
+      // Translate using NLLB — preserve markdown structure
+      // NLLB destroys markdown when translating the whole blob at once.
+      // Split by lines, preserve structural markers, translate only text content.
+      const lines = text.split("\n");
+      const translatedLines: string[] = [];
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+
+        // Preserve empty lines, horizontal rules, and code fences as-is
+        if (
+          trimmed === "" ||
+          trimmed.match(/^(-{3,}|\*{3,}|_{3,})$/) ||
+          trimmed.startsWith("```")
+        ) {
+          translatedLines.push(line);
+          continue;
+        }
+
+        // Extract and preserve markdown prefix (headers, bullets, numbered lists)
+        const prefixMatch = trimmed.match(
+          /^(#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s+)/,
+        );
+        const prefix = prefixMatch ? prefixMatch[1] : "";
+        const textContent = prefix ? trimmed.slice(prefix.length) : trimmed;
+
+        // Skip lines that are purely structural (e.g. just "---")
+        if (!textContent.trim()) {
+          translatedLines.push(line);
+          continue;
+        }
+
+        // Translate only the text content
+        const translatedText = await nllbService.translate(textContent, {
+          srcLang: srcLang,
+          tgtLang: tgtLang,
+        });
+
+        translatedLines.push(prefix + translatedText);
+      }
+
+      const translated = translatedLines.join("\n");
 
       // Persist translation to MongoDB in background
-      chatService.saveMessageTranslation(
-        userId,
-        sessionId,
-        text,
-        translated,
-        targetLanguage || "hi"
-      ).catch(err => console.error("Background save translation error:", err));
+      chatService
+        .saveMessageTranslation(
+          userId,
+          sessionId,
+          text,
+          translated,
+          targetLanguage || "hi",
+        )
+        .catch((err) =>
+          console.error("Background save translation error:", err),
+        );
 
       res.json({
         success: true,
