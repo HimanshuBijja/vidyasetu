@@ -103,12 +103,4 @@ Let's keep the spirit of open source alive!
 - Creating something from scratch takes a lot of hard work, and I hope you respect that. 😄
 - If you have any questions or need permission for something specific, feel free to reach out.
 
-## Contact
 
-If you have any inquiries or suggestions, please reach out:
-
-- **Email:** [ayush421301@gmail.com](mailto:ayush421301@gmail.com)
-- **X (Twitter):** [ayuxy027](https://x.com/ayuxy027)
-- **GitHub:** [ayuxy027](https://github.com/ayuxy027)
-
----
