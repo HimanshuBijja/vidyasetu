@@ -32,7 +32,9 @@ const AIChatPage: React.FC = () => {
 
   // Chat State
   const [messages, setMessages] = useState<MessageUI[]>([]);
-  const [pendingStudyPrompt, setPendingStudyPrompt] = useState<string | null>(null);
+  const [pendingStudyPrompt, setPendingStudyPrompt] = useState<string | null>(
+    null,
+  );
 
   // Global Settings
   const [selectedLanguage, setSelectedLanguage] = useState("hi");
@@ -66,8 +68,8 @@ const AIChatPage: React.FC = () => {
       setBannerVisible(scrollY < 50);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const loadSessions = async () => {
@@ -76,7 +78,7 @@ const AIChatPage: React.FC = () => {
       const sessionsList = await getAllSessions(userId);
       const sortedSessions = sessionsList.sort(
         (a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
       );
       setSessions(sortedSessions);
 
@@ -108,14 +110,13 @@ const AIChatPage: React.FC = () => {
           metadata: msg.metadata,
           translatedContent: msg.translatedContent,
           translatedLanguage: msg.translatedLanguage,
-        })
+        }),
       );
       setMessages(uiMessages);
 
       // Load session settings if available
       if (sessionDetails.language) setSelectedLanguage(sessionDetails.language);
       if (sessionDetails.grade) setSelectedGrade(sessionDetails.grade);
-
     } catch (error) {
       console.error("Failed to load session messages:", error);
       // Start fresh if session doesn't exist
@@ -158,7 +159,9 @@ const AIChatPage: React.FC = () => {
 
     try {
       await deleteSession(userId, confirmModal.sessionId);
-      const remainingSessions = sessions.filter((s) => s.sessionId !== confirmModal.sessionId);
+      const remainingSessions = sessions.filter(
+        (s) => s.sessionId !== confirmModal.sessionId,
+      );
       setSessions(remainingSessions);
 
       // If deleted session was active
@@ -181,8 +184,8 @@ const AIChatPage: React.FC = () => {
     // Update UI immediately
     setSessions((prev) =>
       prev.map((s) =>
-        s.sessionId === sessionId ? { ...s, chatName: newName } : s
-      )
+        s.sessionId === sessionId ? { ...s, chatName: newName } : s,
+      ),
     );
 
     // Save to database
@@ -194,34 +197,40 @@ const AIChatPage: React.FC = () => {
     }
   };
 
-  const handleSessionUpdate = useCallback(async (firstUserMessage?: string) => {
-    // Reload sessions to get updated data
-    await loadSessions();
+  const handleSessionUpdate = useCallback(
+    async (firstUserMessage?: string) => {
+      // Reload sessions to get updated data
+      await loadSessions();
 
-    // Auto-generate chat name for new sessions after first user message
-    if (firstUserMessage && currentSessionId) {
-      try {
-        const chatName = await generateChatName(firstUserMessage);
+      // Auto-generate chat name for new sessions after first user message
+      if (firstUserMessage && currentSessionId) {
+        try {
+          const chatName = await generateChatName(firstUserMessage);
 
-        // Update UI
-        setSessions((prev) =>
-          prev.map((s) =>
-            s.sessionId === currentSessionId && !s.chatName ? { ...s, chatName } : s
-          )
-        );
+          // Update UI
+          setSessions((prev) =>
+            prev.map((s) =>
+              s.sessionId === currentSessionId && !s.chatName ?
+                { ...s, chatName }
+              : s,
+            ),
+          );
 
-        // Save to database
-        await updateChatName(userId, currentSessionId, chatName);
-      } catch (error) {
-        console.error("Failed to generate/save chat name:", error);
+          // Save to database
+          await updateChatName(userId, currentSessionId, chatName);
+        } catch (error) {
+          console.error("Failed to generate/save chat name:", error);
+        }
       }
-    }
-  }, [userId, currentSessionId]);
-
-
+    },
+    [userId, currentSessionId],
+  );
 
   return (
-    <div className="flex flex-col overflow-hidden bg-gradient-to-br from-orange-50 via-white to-orange-50/30" style={{ height: '100dvh' }}>
+    <div
+      className="flex flex-col overflow-hidden bg-gradient-to-br from-orange-50 via-white to-orange-50/30"
+      style={{ height: "100dvh" }}
+    >
       {/* Banner at the top - fades on scroll */}
       <Banner isVisible={bannerVisible} />
       {/* Fixed Navbar - Renders the fixed navbar */}
@@ -229,8 +238,11 @@ const AIChatPage: React.FC = () => {
         <Navbar />
       </div>
 
+      {/* Spacer for fixed Navbar + Banner height */}
+      <div className="flex-shrink-0 h-[100px] sm:h-[104px]" />
+
       {/* Header Section */}
-      <div className="flex-shrink-0 px-4 sm:px-6 md:px-8 py-2 sm:py-3 border-b-2 border-orange-100 bg-white/50 backdrop-blur-sm max-w-[1920px] w-full mx-auto mt-[100px] sm:mt-[104px]">
+      <div className="flex-shrink-0 px-4 sm:px-6 md:px-8 py-2 sm:py-3 border-b-2 border-orange-100 bg-white/50 backdrop-blur-sm max-w-[1920px] w-full mx-auto">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-gray-800">
@@ -246,19 +258,21 @@ const AIChatPage: React.FC = () => {
             <div className="flex gap-2 bg-white/80 backdrop-blur-md rounded-lg p-1 border-2 border-orange-100">
               <button
                 onClick={() => setActiveTab("chat")}
-                className={`px-3 sm:px-4 md:px-5 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${activeTab === "chat"
-                  ? "bg-orange-400 text-white shadow-md"
+                className={`px-3 sm:px-4 md:px-5 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                  activeTab === "chat" ?
+                    "bg-orange-400 text-white shadow-md"
                   : "text-gray-600 hover:bg-orange-50"
-                  }`}
+                }`}
               >
                 Chat
               </button>
               <button
                 onClick={() => setActiveTab("resources")}
-                className={`px-3 sm:px-4 md:px-5 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${activeTab === "resources"
-                  ? "bg-orange-400 text-white shadow-md"
+                className={`px-3 sm:px-4 md:px-5 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                  activeTab === "resources" ?
+                    "bg-orange-400 text-white shadow-md"
                   : "text-gray-600 hover:bg-orange-50"
-                  }`}
+                }`}
               >
                 Resources
               </button>
@@ -267,10 +281,11 @@ const AIChatPage: React.FC = () => {
             {/* Plan Button - Separate from tabs */}
             <button
               onClick={() => setActiveTab("plan")}
-              className={`px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 ${activeTab === "plan"
-                ? "bg-orange-500 text-white shadow-md"
+              className={`px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 ${
+                activeTab === "plan" ?
+                  "bg-orange-500 text-white shadow-md"
                 : "bg-white/80 text-gray-700 border-2 border-orange-200 hover:bg-orange-50 hover:border-orange-300"
-                }`}
+              }`}
             >
               <span>📋</span>
               Plan
@@ -281,7 +296,9 @@ const AIChatPage: React.FC = () => {
           <div className="flex items-center gap-3 ml-4">
             {/* Language Selector */}
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md rounded-lg p-1 border border-orange-200 shadow-sm">
-              <span className="text-xs font-semibold text-gray-500 pl-2">Lang:</span>
+              <span className="text-xs font-semibold text-gray-500 pl-2">
+                Lang:
+              </span>
               <select
                 value={selectedLanguage}
                 onChange={async (e) => {
@@ -289,7 +306,9 @@ const AIChatPage: React.FC = () => {
                   setSelectedLanguage(newLang);
                   if (currentSessionId) {
                     try {
-                      await updateSessionSettings(userId, currentSessionId, { language: newLang });
+                      await updateSessionSettings(userId, currentSessionId, {
+                        language: newLang,
+                      });
                     } catch (err) {
                       console.error("Failed to save language setting", err);
                     }
@@ -297,15 +316,19 @@ const AIChatPage: React.FC = () => {
                 }}
                 className="bg-transparent text-xs sm:text-sm font-bold text-orange-600 focus:outline-none cursor-pointer py-1 pr-1 max-w-[100px]"
               >
-                {INDIAN_LANGUAGES.map(lang => (
-                  <option key={lang.code} value={lang.code}>{lang.name}</option>
+                {INDIAN_LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Grade Selector */}
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md rounded-lg p-1 border border-orange-200 shadow-sm">
-              <span className="text-xs font-semibold text-gray-500 pl-2">Grade:</span>
+              <span className="text-xs font-semibold text-gray-500 pl-2">
+                Grade:
+              </span>
               <select
                 value={selectedGrade}
                 onChange={async (e) => {
@@ -313,7 +336,9 @@ const AIChatPage: React.FC = () => {
                   setSelectedGrade(newGrade);
                   if (currentSessionId) {
                     try {
-                      await updateSessionSettings(userId, currentSessionId, { grade: newGrade });
+                      await updateSessionSettings(userId, currentSessionId, {
+                        grade: newGrade,
+                      });
                     } catch (err) {
                       console.error("Failed to save grade setting", err);
                     }
@@ -321,8 +346,10 @@ const AIChatPage: React.FC = () => {
                 }}
                 className="bg-transparent text-xs sm:text-sm font-bold text-orange-600 focus:outline-none cursor-pointer py-1 pr-1"
               >
-                {GRADE_LEVELS.map(g => (
-                  <option key={g.value} value={g.value}>{g.label}</option>
+                {GRADE_LEVELS.map((g) => (
+                  <option key={g.value} value={g.value}>
+                    {g.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -352,8 +379,9 @@ const AIChatPage: React.FC = () => {
           title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
         >
           <svg
-            className={`w-4 h-4 text-gray-600 transition-transform ${sidebarCollapsed ? "rotate-180" : ""
-              }`}
+            className={`w-4 h-4 text-gray-600 transition-transform ${
+              sidebarCollapsed ? "rotate-180" : ""
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -369,7 +397,7 @@ const AIChatPage: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1 overflow-hidden">
-          {activeTab === "chat" && currentSessionId ? (
+          {activeTab === "chat" && currentSessionId ?
             <ChatInterface
               userId={userId}
               sessionId={currentSessionId}
@@ -380,9 +408,9 @@ const AIChatPage: React.FC = () => {
               onInitialPromptConsumed={() => setPendingStudyPrompt(null)}
               selectedLanguage={selectedLanguage}
             />
-          ) : activeTab === "resources" && currentSessionId ? (
+          : activeTab === "resources" && currentSessionId ?
             <ResourcesPanel userId={userId} sessionId={currentSessionId} />
-          ) : activeTab === "plan" && currentSessionId ? (
+          : activeTab === "plan" && currentSessionId ?
             <PlanDashboard
               userId={userId}
               sessionId={currentSessionId}
@@ -392,8 +420,7 @@ const AIChatPage: React.FC = () => {
               }}
               selectedGrade={selectedGrade}
             />
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-500">
+          : <div className="h-full flex items-center justify-center text-gray-500">
               <div className="text-center">
                 <svg
                   className="w-16 h-16 mx-auto mb-4 text-gray-300"
@@ -417,7 +444,7 @@ const AIChatPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          )}
+          }
         </div>
       </div>
 

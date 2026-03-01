@@ -30,7 +30,8 @@ export class StitchController {
       res.status(500).json({
         success: false,
         connected: false,
-        error: error instanceof Error ? error.message : "Connection check failed",
+        error:
+          error instanceof Error ? error.message : "Connection check failed",
       });
     }
   }
@@ -103,7 +104,10 @@ export class StitchController {
         res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
         res.setHeader("Access-Control-Allow-Credentials", "true");
         res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        res.setHeader(
+          "Access-Control-Allow-Headers",
+          "Content-Type, Authorization",
+        );
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
@@ -114,29 +118,42 @@ export class StitchController {
 
         try {
           // Route to appropriate service based on mode
-          const streamGenerator = generationMode === "cloud"
-            ? groqStitchService.generateStream(prompt, { temperature: 0.7, maxTokens: 4096 })
+          const streamGenerator =
+            generationMode === "cloud" ?
+              groqStitchService.generateStream(prompt, {
+                temperature: 0.7,
+                maxTokens: 4096,
+              })
             : ollamaService.generateStream(prompt, { temperature: 0.7 });
 
           for await (const chunk of streamGenerator) {
             if (chunk.type === "thinking") {
               thinkingText += chunk.content || "";
               // Send thinking chunk to client
-              res.write(`data: ${JSON.stringify({ type: "thinking", content: chunk.content })}\n\n`);
+              res.write(
+                `data: ${JSON.stringify({ type: "thinking", content: chunk.content })}\n\n`,
+              );
             } else if (chunk.type === "response") {
               responseText += chunk.content || "";
               // Send response chunk to client (this is the actual content output)
-              res.write(`data: ${JSON.stringify({ type: "response", content: chunk.content })}\n\n`);
+              res.write(
+                `data: ${JSON.stringify({ type: "response", content: chunk.content })}\n\n`,
+              );
             }
           }
 
           // After streaming completes, send final result with complete content
-          const content = responseText || thinkingText;
-          res.write(`data: ${JSON.stringify({ type: "complete", content, thinkingText, mode: generationMode })}\n\n`);
+          let content = responseText || thinkingText;
+          // Clean up broken LATEXINLINE/LATEXDISPLAY tokens from model output
+          content = content.replace(/\bLATEX(?:INLINE|DISPLAY)[_\d]*/gi, "");
+          content = content.replace(/  +/g, " ");
+          res.write(
+            `data: ${JSON.stringify({ type: "complete", content, thinkingText, mode: generationMode })}\n\n`,
+          );
           res.end();
         } catch (error) {
           res.write(
-            `data: ${JSON.stringify({ type: "error", error: error instanceof Error ? error.message : "Generation failed" })}\n\n`
+            `data: ${JSON.stringify({ type: "error", error: error instanceof Error ? error.message : "Generation failed" })}\n\n`,
           );
           res.end();
         }
@@ -144,9 +161,20 @@ export class StitchController {
       }
 
       // Non-streaming: Generate plain text content
-      const content = generationMode === "cloud"
-        ? await groqStitchService.generateTextContent(prompt, { temperature: 0.7, maxTokens: 4096 })
-        : await ollamaService.generateTextContent(prompt, { temperature: 0.7, maxTokens: 4096 });
+      let content =
+        generationMode === "cloud" ?
+          await groqStitchService.generateTextContent(prompt, {
+            temperature: 0.7,
+            maxTokens: 4096,
+          })
+        : await ollamaService.generateTextContent(prompt, {
+            temperature: 0.7,
+            maxTokens: 4096,
+          });
+
+      // Clean up broken LATEXINLINE/LATEXDISPLAY tokens from model output
+      content = content.replace(/\bLATEX(?:INLINE|DISPLAY)[_\d]*/gi, "");
+      content = content.replace(/  +/g, " ");
 
       res.json({
         success: true,
@@ -163,7 +191,8 @@ export class StitchController {
       console.error("Content generation error:", error);
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Content generation failed",
+        error:
+          error instanceof Error ? error.message : "Content generation failed",
       });
     }
   }
@@ -221,19 +250,21 @@ export class StitchController {
       if (!env.NLLB_ENABLED) {
         res.status(503).json({
           success: false,
-          error: "NLLB-200 translation is not enabled. Set NLLB_ENABLED=true in your environment.",
+          error:
+            "NLLB-200 translation is not enabled. Set NLLB_ENABLED=true in your environment.",
         });
         return;
       }
 
-      const { text, sourceLanguage, targetLanguage, batchSize, mode } = req.body as {
-        text?: string;
-        sourceLanguage?: string;
-        targetLanguage?: string;
-        stream?: boolean;
-        batchSize?: number;
-        mode?: "local" | "cloud";
-      };
+      const { text, sourceLanguage, targetLanguage, batchSize, mode } =
+        req.body as {
+          text?: string;
+          sourceLanguage?: string;
+          targetLanguage?: string;
+          stream?: boolean;
+          batchSize?: number;
+          mode?: "local" | "cloud";
+        };
 
       // Determine translation mode: "local" (NLLB) or "cloud" (Groq)
       const translationMode = mode === "cloud" ? "cloud" : "local";
@@ -242,7 +273,8 @@ export class StitchController {
       if (!text || typeof text !== "string" || !text.trim()) {
         res.status(400).json({
           success: false,
-          error: "Text is required for translation and must be a non-empty string",
+          error:
+            "Text is required for translation and must be a non-empty string",
         });
         return;
       }
@@ -258,7 +290,10 @@ export class StitchController {
       }
 
       // Validate batch size if provided
-      if (batchSize !== undefined && (typeof batchSize !== "number" || batchSize < 1 || batchSize > 32)) {
+      if (
+        batchSize !== undefined &&
+        (typeof batchSize !== "number" || batchSize < 1 || batchSize > 32)
+      ) {
         res.status(400).json({
           success: false,
           error: "Batch size must be between 1 and 32",
@@ -266,18 +301,12 @@ export class StitchController {
         return;
       }
 
-      const srcCode =
-        (sourceLanguage as keyof typeof languageService) || "en";
-      const tgtCode =
-        (targetLanguage as keyof typeof languageService) || "hi";
+      const srcCode = (sourceLanguage as keyof typeof languageService) || "en";
+      const tgtCode = (targetLanguage as keyof typeof languageService) || "hi";
 
       // NLLB uses FLORES-200 language code format (eng_Latn, hin_Deva, etc.)
-      const srcLang = languageService.toNLLBCode(
-        srcCode as any
-      );
-      const tgtLang = languageService.toNLLBCode(
-        tgtCode as any
-      );
+      const srcLang = languageService.toNLLBCode(srcCode as any);
+      const tgtLang = languageService.toNLLBCode(tgtCode as any);
 
       // If stream flag is set, use Server-Sent Events for sentence-by-sentence streaming
       if (req.body && (req.body as any).stream) {
@@ -287,7 +316,7 @@ export class StitchController {
         res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         res.setHeader(
           "Access-Control-Allow-Headers",
-          "Content-Type, Authorization"
+          "Content-Type, Authorization",
         );
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
@@ -305,7 +334,7 @@ export class StitchController {
             (chunk) => {
               // Forward chunk as SSE event
               res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-            }
+            },
           );
 
           // End SSE stream
@@ -316,10 +345,10 @@ export class StitchController {
               success: false,
               type: "error",
               error:
-                error instanceof Error
-                  ? error.message
-                  : "Streaming translation failed",
-            })}\n\n`
+                error instanceof Error ?
+                  error.message
+                : "Streaming translation failed",
+            })}\n\n`,
           );
           res.end();
         }
@@ -328,15 +357,20 @@ export class StitchController {
       }
 
       // Non-streaming: route to appropriate service
+      // Clean LATEXINLINE/LATEXDISPLAY tokens from source text before translation
+      const cleanText = text
+        .replace(/\bLATEX(?:INLINE|DISPLAY)[_\d]*/gi, "")
+        .replace(/  +/g, " ");
+
       let translated: string;
       if (translationMode === "cloud") {
         translated = await groqTranslationService.translate(
-          text,
+          cleanText,
           sourceLanguage || "en",
-          targetLanguage || "hi"
+          targetLanguage || "hi",
         );
       } else {
-        translated = await nllbService.translate(text, {
+        translated = await nllbService.translate(cleanText, {
           srcLang: srcLang,
           tgtLang: tgtLang,
           batchSize: batchSize, // Auto-detected if not provided (CPU vs GPU optimized)
@@ -352,14 +386,10 @@ export class StitchController {
       console.error("Translation error:", error);
       res.status(500).json({
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Translation failed",
+        error: error instanceof Error ? error.message : "Translation failed",
       });
     }
   }
-
 
   /**
    * Refine existing content based on user query
@@ -376,7 +406,11 @@ export class StitchController {
         return;
       }
 
-      if (!refineQuery || typeof refineQuery !== "string" || !refineQuery.trim()) {
+      if (
+        !refineQuery ||
+        typeof refineQuery !== "string" ||
+        !refineQuery.trim()
+      ) {
         res.status(400).json({
           success: false,
           error: "Refinement query is required and must be a non-empty string",
@@ -414,7 +448,10 @@ Generate the refined content now, maintaining perfect markdown formatting.`;
         res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
         res.setHeader("Access-Control-Allow-Credentials", "true");
         res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        res.setHeader(
+          "Access-Control-Allow-Headers",
+          "Content-Type, Authorization",
+        );
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
@@ -424,26 +461,42 @@ Generate the refined content now, maintaining perfect markdown formatting.`;
         let responseText = "";
 
         try {
-          const streamGenerator = generationMode === "cloud"
-            ? groqStitchService.generateStream(prompt, { temperature: 0.7, maxTokens: 4096 })
+          const streamGenerator =
+            generationMode === "cloud" ?
+              groqStitchService.generateStream(prompt, {
+                temperature: 0.7,
+                maxTokens: 4096,
+              })
             : ollamaService.generateStream(prompt, { temperature: 0.7 });
 
           for await (const chunk of streamGenerator) {
             if (chunk.type === "thinking") {
               thinkingText += chunk.content || "";
-              res.write(`data: ${JSON.stringify({ type: "thinking", content: chunk.content })}\n\n`);
+              res.write(
+                `data: ${JSON.stringify({ type: "thinking", content: chunk.content })}\n\n`,
+              );
             } else if (chunk.type === "response") {
               responseText += chunk.content || "";
-              res.write(`data: ${JSON.stringify({ type: "response", content: chunk.content })}\n\n`);
+              res.write(
+                `data: ${JSON.stringify({ type: "response", content: chunk.content })}\n\n`,
+              );
             }
           }
 
-          const finalContent = responseText || thinkingText;
-          res.write(`data: ${JSON.stringify({ type: "complete", content: finalContent, thinkingText, mode: generationMode })}\n\n`);
+          let finalContent = responseText || thinkingText;
+          // Clean up broken LATEXINLINE/LATEXDISPLAY tokens from model output
+          finalContent = finalContent.replace(
+            /\bLATEX(?:INLINE|DISPLAY)[_\d]*/gi,
+            "",
+          );
+          finalContent = finalContent.replace(/  +/g, " ");
+          res.write(
+            `data: ${JSON.stringify({ type: "complete", content: finalContent, thinkingText, mode: generationMode })}\n\n`,
+          );
           res.end();
         } catch (error) {
           res.write(
-            `data: ${JSON.stringify({ type: "error", error: error instanceof Error ? error.message : "Refinement failed" })}\n\n`
+            `data: ${JSON.stringify({ type: "error", error: error instanceof Error ? error.message : "Refinement failed" })}\n\n`,
           );
           res.end();
         }
@@ -451,9 +504,23 @@ Generate the refined content now, maintaining perfect markdown formatting.`;
       }
 
       // Non-streaming
-      const refinedContent = generationMode === "cloud"
-        ? await groqStitchService.generateTextContent(prompt, { temperature: 0.7, maxTokens: 4096 })
-        : await ollamaService.generateTextContent(prompt, { temperature: 0.7, maxTokens: 4096 });
+      let refinedContent =
+        generationMode === "cloud" ?
+          await groqStitchService.generateTextContent(prompt, {
+            temperature: 0.7,
+            maxTokens: 4096,
+          })
+        : await ollamaService.generateTextContent(prompt, {
+            temperature: 0.7,
+            maxTokens: 4096,
+          });
+
+      // Clean up broken LATEXINLINE/LATEXDISPLAY tokens from model output
+      refinedContent = refinedContent.replace(
+        /\bLATEX(?:INLINE|DISPLAY)[_\d]*/gi,
+        "",
+      );
+      refinedContent = refinedContent.replace(/  +/g, " ");
 
       res.json({
         success: true,
@@ -467,7 +534,8 @@ Generate the refined content now, maintaining perfect markdown formatting.`;
       console.error("Content refinement error:", error);
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Content refinement failed",
+        error:
+          error instanceof Error ? error.message : "Content refinement failed",
       });
     }
   }
@@ -481,8 +549,9 @@ Generate the refined content now, maintaining perfect markdown formatting.`;
       res.json({
         success: true,
         connected: isConnected,
-        message: isConnected
-          ? "Groq API (Kimi K2) is connected and ready"
+        message:
+          isConnected ?
+            "Groq API (Kimi K2) is connected and ready"
           : "Groq API is not available. Check GROQ_API_KEY environment variable.",
       });
     } catch (error) {
@@ -490,7 +559,8 @@ Generate the refined content now, maintaining perfect markdown formatting.`;
       res.json({
         success: false,
         connected: false,
-        message: error instanceof Error ? error.message : "Groq service unavailable",
+        message:
+          error instanceof Error ? error.message : "Groq service unavailable",
       });
     }
   }
@@ -516,7 +586,7 @@ Generate the refined content now, maintaining perfect markdown formatting.`;
         {
           srcLang: "eng_Latn",
           tgtLang: "hin_Deva",
-        }
+        },
       );
 
       res.json({
@@ -531,7 +601,8 @@ Generate the refined content now, maintaining perfect markdown formatting.`;
         success: false,
         connected: false,
         enabled: env.NLLB_ENABLED,
-        error: error instanceof Error ? error.message : "NLLB service unavailable",
+        error:
+          error instanceof Error ? error.message : "NLLB service unavailable",
       });
     }
   }
@@ -556,10 +627,13 @@ Generate the refined content now, maintaining perfect markdown formatting.`;
     const subjectName = subjectNames[params.subject] || params.subject;
 
     // Enhanced prompt for mathematics with battle-tested math handling
-    const isMathematics = params.subject.toLowerCase().includes("math") || 
-                          params.subject.toLowerCase() === "mathematics";
-    
-    const mathSpecificInstructions = isMathematics ? `
+    const isMathematics =
+      params.subject.toLowerCase().includes("math") ||
+      params.subject.toLowerCase() === "mathematics";
+
+    const mathSpecificInstructions =
+      isMathematics ?
+        `
 CRITICAL MATHEMATICAL REQUIREMENTS (OPTIMIZED FOR SMALL MODEL):
 - KEEP MATH SIMPLE AND STRAIGHTFORWARD - Use plain text notation for formulas
   * Write formulas directly in text: Use x^2 for powers, H2O for subscripts, a/b for fractions
@@ -597,7 +671,8 @@ CRITICAL MATHEMATICAL REQUIREMENTS (OPTIMIZED FOR SMALL MODEL):
   * Use abstract mathematical notation
   * Go beyond basic Class ${params.grade} level mathematics
 
-` : '';
+`
+      : "";
 
     // Length instructions - default to 400-500 words
     const lengthInstructions = `
@@ -617,7 +692,9 @@ CRITICAL LENGTH REQUIREMENT: OPTIMAL CONTENT (400-500 words)
 `;
 
     // Mode-specific instructions
-    const modeSpecificInstructions = params.mode === "cloud" ? `
+    const modeSpecificInstructions =
+      params.mode === "cloud" ?
+        `
 CRITICAL: KIMI K2 MODEL CAPABILITIES (CLOUD MODE)
 - You have FULL CAPABILITY to include complex mathematical equations, expressions, and scientific notation
 - FREELY use mathematical symbols, operators, and expressions when appropriate:
@@ -636,7 +713,8 @@ CRITICAL: KIMI K2 MODEL CAPABILITIES (CLOUD MODE)
 - Use proper units and scientific notation: 6.022 × 10²³, 3.0 × 10⁸ m/s
 - Include diagrams descriptions with mathematical relationships
 
-` : `
+`
+      : `
 CRITICAL: DEEPSEEK-R1 MODEL OPTIMIZATION (LOCAL MODE)
 - Keep content TEXT-FOCUSED and straightforward
 - Use simple, plain text notation for formulas:
@@ -906,7 +984,8 @@ Begin generating the comprehensive educational content now. Remember: PERFECT ma
       console.error("Error getting Stitch sessions:", error);
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Failed to get sessions",
+        error:
+          error instanceof Error ? error.message : "Failed to get sessions",
       });
     }
   }
@@ -966,7 +1045,7 @@ Begin generating the comprehensive educational content now. Remember: PERFECT ma
       }
 
       // Validate session data
-      if (sessionData && typeof sessionData !== 'object') {
+      if (sessionData && typeof sessionData !== "object") {
         res.status(400).json({
           success: false,
           error: "Invalid session data",
@@ -974,7 +1053,11 @@ Begin generating the comprehensive educational content now. Remember: PERFECT ma
         return;
       }
 
-      const session = await stitchService.saveSession(userId, sessionId, sessionData);
+      const session = await stitchService.saveSession(
+        userId,
+        sessionId,
+        sessionData,
+      );
 
       res.json({
         success: true,
@@ -1021,7 +1104,8 @@ Begin generating the comprehensive educational content now. Remember: PERFECT ma
       console.error("Error deleting Stitch session:", error);
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Failed to delete session",
+        error:
+          error instanceof Error ? error.message : "Failed to delete session",
       });
     }
   }
@@ -1060,11 +1144,13 @@ Begin generating the comprehensive educational content now. Remember: PERFECT ma
       console.error("Error updating Stitch session name:", error);
       res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Failed to update session name",
+        error:
+          error instanceof Error ?
+            error.message
+          : "Failed to update session name",
       });
     }
   }
 }
 
 export const stitchController = new StitchController();
-
