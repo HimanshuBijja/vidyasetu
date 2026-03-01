@@ -362,7 +362,7 @@ function preprocessLatex(content: string): string {
         return "\n$$\n" + inner.trim() + "\n$$\n";
       }
       return match;
-    }
+    },
   );
 
   // Fix common LaTeX issues in AI responses
@@ -373,6 +373,10 @@ function preprocessLatex(content: string): string {
     }
     return match;
   });
+
+  // Clean up broken LATEXINLINE tokens from Ollama model output
+  // The model sometimes generates LATEXINLINE, LATEXINLINE_0, etc. as broken math placeholders
+  processed = processed.replace(/\bLATEXINLINE[_\d]*/gi, "");
 
   // Clean up multiple newlines (reduce gaps)
   processed = processed.replace(/\n{3,}/g, "\n\n");

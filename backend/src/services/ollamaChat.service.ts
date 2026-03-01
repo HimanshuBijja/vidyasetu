@@ -22,7 +22,7 @@ export class OllamaChatService {
 
       const models = response.data.models || [];
       return models.some(
-        (m: any) => m.name === this.model || m.name.startsWith("deepseek-r1")
+        (m: any) => m.name === this.model || m.name.startsWith("deepseek-r1"),
       );
     } catch (error) {
       return false;
@@ -32,7 +32,7 @@ export class OllamaChatService {
   async classifyQuery(
     query: string,
     hasDocuments: boolean,
-    chatHistory: ChatMessage[]
+    chatHistory: ChatMessage[],
   ): Promise<{
     type: "GREETING" | "SIMPLE" | "RAG";
     reason: string;
@@ -126,7 +126,7 @@ OUTPUT FORMAT (JSON only, no other text):
             num_predict: 150,
           },
         },
-        { timeout: 15001 }
+        { timeout: 15001 },
       );
 
       const rawResponse = response.data.response || "";
@@ -136,8 +136,9 @@ OUTPUT FORMAT (JSON only, no other text):
         try {
           const parsed = JSON.parse(jsonMatch[0]);
           const validTypes = ["GREETING", "SIMPLE", "RAG"];
-          const type = validTypes.includes(parsed.type?.toUpperCase())
-            ? parsed.type.toUpperCase()
+          const type =
+            validTypes.includes(parsed.type?.toUpperCase()) ?
+              parsed.type.toUpperCase()
             : "RAG";
 
           // Use AI's estimated output tokens, with fallback based on query length
@@ -220,36 +221,34 @@ OUTPUT FORMAT (JSON only, no other text):
     chatHistory: ChatMessage[],
     question: string,
     language: LanguageCode,
-    sources: SourceCitation[]
+    sources: SourceCitation[],
   ): Promise<{ answer: string; reasoning?: string; thinking?: string }> {
     const languageName = SUPPORTED_LANGUAGES[language];
     const hasDocuments = documentContext && documentContext.trim().length > 0;
 
     const recentHistory = chatHistory.slice(-RAG_CONSTANTS.HISTORY_TURNS);
     const chatContextString =
-      recentHistory.length > 0
-        ? recentHistory
-            .map(
-              (msg) =>
-                `${msg.role === "user" ? "Student" : "MasterJi"}: ${
-                  msg.content
-                }`
-            )
-            .join("\n")
-        : "";
+      recentHistory.length > 0 ?
+        recentHistory
+          .map(
+            (msg) =>
+              `${msg.role === "user" ? "Student" : "MasterJi"}: ${msg.content}`,
+          )
+          .join("\n")
+      : "";
 
     const sourcesString =
-      sources.length > 0
-        ? sources
-            .map(
-              (s, idx) =>
-                `[Source ${idx + 1}: "${s.pdfName}", Page ${s.pageNo}]`
-            )
-            .join("\n")
-        : "";
+      sources.length > 0 ?
+        sources
+          .map(
+            (s, idx) => `[Source ${idx + 1}: "${s.pdfName}", Page ${s.pageNo}]`,
+          )
+          .join("\n")
+      : "";
 
-    const prompt = hasDocuments
-      ? `You are MasterJi, an expert educational AI assistant.
+    const prompt =
+      hasDocuments ?
+        `You are MasterJi, an expert educational AI assistant.
 
 I have already extracted and provided relevant information from the user's uploaded documents below. This context contains the actual content from their files (PDFs, DOCX, images, etc.).
 
@@ -273,6 +272,7 @@ CRITICAL INSTRUCTIONS:
 6. When referencing information, cite sources as [Source X]
 7. Respond in ${languageName}
 8. If the context doesn't contain relevant information, say "The uploaded documents don't contain information about [topic]"
+9. MATH NOTATION: Use plain text for ALL mathematical expressions. Write fractions as "a/b", exponents as "x^2", square roots as "sqrt(x)". NEVER use LaTeX, LATEXINLINE, or any placeholder tokens. Write math in a way that is readable as plain text.
 
 YOUR ANSWER (in ${languageName}):`
       : `You are MasterJi, an educational AI.
@@ -308,7 +308,7 @@ Respond in ${languageName} briefly.`;
             top_p: 0.95,
           },
         },
-        { timeout: 120000 }
+        { timeout: 120000 },
       );
 
       if (!response.data.response) {
@@ -333,7 +333,7 @@ Respond in ${languageName} briefly.`;
   async handleSimpleQuery(
     query: string,
     language: LanguageCode,
-    chatHistory: ChatMessage[]
+    chatHistory: ChatMessage[],
   ): Promise<string> {
     const trimmed = query.trim().toLowerCase();
 
@@ -405,11 +405,11 @@ Response in ${languageName}:`;
             num_predict: 150,
           },
         },
-        { timeout: 15001 }
+        { timeout: 15001 },
       );
 
       const { answer } = this.parseDeepSeekResponse(
-        response.data.response || ""
+        response.data.response || "",
       );
       return answer;
     } catch (error) {
@@ -419,7 +419,7 @@ Response in ${languageName}:`;
 
   async generateWithMaxOutput(
     prompt: string,
-    maxOutputTokens: number
+    maxOutputTokens: number,
   ): Promise<{ answer: string; thinking?: string }> {
     const promptTokens = countTokens(prompt);
 
@@ -429,11 +429,11 @@ Response in ${languageName}:`;
     // Ensure num_predict is always positive and at least 50 tokens
     const numPredict = Math.max(
       50,
-      Math.min(maxOutputTokens, calculatedMaxTokens)
+      Math.min(maxOutputTokens, calculatedMaxTokens),
     );
 
     console.log(
-      `🚀 Ollama Request: num_predict=${numPredict}, prompt_tokens=${promptTokens}, max_requested=${maxOutputTokens}, calculated_max=${calculatedMaxTokens}`
+      `🚀 Ollama Request: num_predict=${numPredict}, prompt_tokens=${promptTokens}, max_requested=${maxOutputTokens}, calculated_max=${calculatedMaxTokens}`,
     );
 
     try {
@@ -449,7 +449,7 @@ Response in ${languageName}:`;
             top_p: 0.95,
           },
         },
-        { timeout: 180000 }
+        { timeout: 180000 },
       );
 
       if (!response.data) {
@@ -470,10 +470,10 @@ Response in ${languageName}:`;
           "❌ Ollama response missing both 'response' and 'thinking' fields",
           {
             data: response.data,
-          }
+          },
         );
         throw new Error(
-          "No content from Ollama - both response and thinking fields are empty"
+          "No content from Ollama - both response and thinking fields are empty",
         );
       }
 
@@ -482,7 +482,7 @@ Response in ${languageName}:`;
       const { answer, thinking } = this.parseDeepSeekResponse(fullResponse);
 
       console.log(
-        `✅ Ollama Response: generated ${countTokens(answer)} tokens`
+        `✅ Ollama Response: generated ${countTokens(answer)} tokens`,
       );
 
       return { answer, thinking };
@@ -510,13 +510,22 @@ Response in ${languageName}:`;
   } {
     const thinkMatch = response.match(/<think>([\s\S]*?)<\/think>/);
 
+    let answer: string;
+    let thinking: string | undefined;
+
     if (thinkMatch) {
-      const thinking = thinkMatch[1].trim();
-      const answer = response.replace(/<think>[\s\S]*?<\/think>/, "").trim();
-      return { answer, thinking };
+      thinking = thinkMatch[1].trim();
+      answer = response.replace(/<think>[\s\S]*?<\/think>/, "").trim();
+    } else {
+      answer = response.trim();
     }
 
-    return { answer: response.trim() };
+    // Clean up broken LATEXINLINE tokens that the model generates for math
+    answer = answer.replace(/\bLATEXINLINE[_\d]*/gi, "");
+    // Clean up resulting double spaces
+    answer = answer.replace(/  +/g, " ");
+
+    return { answer, thinking };
   }
 
   async extractKeywords(query: string): Promise<string[]> {
@@ -537,7 +546,7 @@ Keywords:`;
             num_predict: 50,
           },
         },
-        { timeout: 15001 }
+        { timeout: 15001 },
       );
 
       const extractedText = response.data.response?.trim() || "NONE";
@@ -632,7 +641,7 @@ Keywords:`;
     if (words.length >= 3) {
       // Check if at least 50% of words have reasonable length
       const reasonableWords = words.filter(
-        (w) => w.length >= 2 && w.length <= 20
+        (w) => w.length >= 2 && w.length <= 20,
       );
       if (reasonableWords.length >= words.length * 0.5) {
         return false;
