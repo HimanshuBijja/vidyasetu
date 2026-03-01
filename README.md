@@ -6,7 +6,7 @@ Welcome to **vidyasetu** 📚
 
 **vidyasetu** is a lightweight, multilingual AI-powered educational platform that generates curriculum-aligned content in 22+ Indian languages. Designed for **100% offline operation** with **zero reliance on cloud services**, vidyasetu runs efficiently on low-resource devices (4-8GB RAM) without requiring internet connectivity.
 
-**🏆 vidyasetu Won First Place at Eduthon Techfest IIT B 29th Edition 🎉**
+
 
 ## Tech Stack
 
