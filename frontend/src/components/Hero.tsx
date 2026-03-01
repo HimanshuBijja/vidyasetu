@@ -60,32 +60,7 @@ const Herobox = () => {
         {/* Center Cards */}
         <div className="md:col-span-2 flex flex-col gap-4 sm:gap-6">
           {/* Top Card - LMR */}
-          <div className="relative bg-white border-2 border-orange-400 rounded-xl p-4 sm:p-5 md:p-6 flex flex-col justify-center h-full hover:shadow-lg transition-all duration-300">
-            <div className="flex items-center mb-3 sm:mb-4 gap-2 sm:gap-3">
-              <div className="flex -space-x-2 sm:-space-x-3">
-                {[
-                  "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop&crop=faces&q=80",
-                  "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&h=100&fit=crop&crop=faces&q=80",
-                  "https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=100&h=100&fit=crop&crop=faces&q=80",
-                  "https://images.unsplash.com/photo-1619895862022-09114b41f16f?w=100&h=100&fit=crop&crop=faces&q=80",
-                ].map((src, idx) => (
-                  <Avatar key={idx} src={src} alt="Indian Teacher Avatar" />
-                ))}
-              </div>
-              <p className="text-xs sm:text-sm text-gray-600 font-medium">
-                and 500+ more Users!
-              </p>
-            </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 leading-relaxed mb-2 sm:mb-3">
-              Transform Your Study <br /> Materials with AI
-            </h3>
-            <Link
-              to="/posters"
-              className="inline-block bg-orange-400 text-white border-2 border-orange-400 font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm hover:bg-orange-500 hover:border-orange-500 transition-all duration-300 w-fit"
-            >
-              Try Generating Posters →
-            </Link>
-          </div>
+          
 
           {/* Bottom Card - LMR */}
           <div className="relative bg-orange-400 border-2 border-orange-400 rounded-xl p-4 sm:p-5 md:p-6 md:px-8 flex flex-col justify-center h-full hover:shadow-lg transition-all duration-300">
